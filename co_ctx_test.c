@@ -10,19 +10,30 @@ ctx_t master;
 ctx_t ctx1;
 ctx_t ctx2;
 
-void f1(transfer_t t)
+int f1(transfer_t t)
 {
     master = t.ctx;
     printf("f1 from main data: %ld\n", (long)t.data);
-    void* arg = t.data + 1;
-    co_jump_ctx(ctx2, arg);
+    t = co_jump_ctx(ctx2, t.data+1);
+
+    master = t.ctx;
+    printf("f1 from main data: %ld\n", (long)t.data);
+    co_jump_ctx(ctx2, t.data+1);
+
+    return 0;
 }
 
-void f2(transfer_t t)
+int f2(transfer_t t)
 {
+    ctx1 = t.ctx;
     printf("f2 from f1 data: %ld\n", (long)t.data);
-    void* arg = t.data + 1;
-    co_jump_ctx(master, arg);
+    t = co_jump_ctx(master, t.data+1);
+
+    ctx1 = t.ctx;
+    printf("f2 from f1 data: %ld\n", (long)t.data);
+    co_jump_ctx(master, t.data+1);
+
+    return 0;
 }
 
 int main()
@@ -31,12 +42,12 @@ int main()
     ctx2 = co_make_ctx(stack2 + STACK_SIZE, STACK_SIZE, f2);
 
     transfer_t t = co_jump_ctx(ctx1, (void*)41);
+    ctx2 = t.ctx;
     printf("main jump from f2, arg %ld\n", (long)t.data);
 
-    /**
-     * TODO: 支持普通协程优雅结束，而不是直接coredump
-     * 每个协程隐含结束后调用exit
-     */
+    t = co_jump_ctx(ctx1, t.data+1);
+    ctx2 = t.ctx;
+    printf("main jump from f2, arg %ld\n", (long)t.data);
 
     return 0;
 }

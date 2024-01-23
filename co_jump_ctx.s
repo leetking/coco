@@ -39,7 +39,7 @@
  *     ctx %rax: 跳转来自ctx，并且保存了它的上下文
  *     data %rdx: 传递给当前ctx的参数
  *
- * ctx_t co_make_ctx(void* sp, size_t size, void (*fn)(transfer_t));
+ * ctx_t co_make_ctx(void* sp, size_t size, int (*fn)(transfer_t));
  * fn接受transfer_t类型参数
  * @sp %rdi:
  * @size %rsi:

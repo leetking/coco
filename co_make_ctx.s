@@ -25,7 +25,7 @@
  ****************************************************************************************/
 
 /**
- * ctx_t co_make_ctx(void* sp, size_t size, void (*fn)(transfer_t));
+ * ctx_t co_make_ctx(void* sp, size_t size, int (*fn)(transfer_t));
  * fn接受transfer_t类型参数
  * @sp %rdi:
  * @size %rsi:
@@ -39,8 +39,20 @@
 co_make_ctx:
     movq    %rdi, %rax          /* %rdi 栈顶 */
     andq    $-16, %rax          /* 栈对齐16字节 ref: https://stackoverflow.com/questions/49391001/why-does-the-x86-64-amd64-system-v-abi-mandate-a-16-byte-stack-alignment */
-    leaq    -0x48(%rax), %rax   /* 分配空间存储ctx */
+    leaq    -0x50(%rax), %rax   /* 分配空间存储ctx, 以及finish的地址 */
+
+    leaq    finish(%rip), %rcx
+    movq    %rcx, 0x48(%rax)    /* finish */
+
     movq    %rdx, 0x40(%rax)    /* fn */
     ret
+
+finish:
+    /* xorq %rdi, %rdi */
+    /* exit with fn return value */
+    movl    %eax, %edi  /* 严格来说int是32位，应该使用eax */
+    call    _exit@PLT
+    /* 预期不会执行到下面hlt */
+    hlt
 
 .size co_make_ctx,.-co_make_ctx
