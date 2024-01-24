@@ -56,3 +56,5 @@ finish:
     hlt
 
 .size co_make_ctx,.-co_make_ctx
+/* 标记栈不可执行 */
+.section .note.GNU-stack,"",%progbits

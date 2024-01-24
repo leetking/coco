@@ -77,3 +77,5 @@ co_jump_ctx:
     ret
 
 .size co_jump_ctx,.-co_jump_ctx
+/* 标记栈不可执行 */
+.section .note.GNU-stack,"",%progbits
