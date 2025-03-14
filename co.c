@@ -3,22 +3,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "co_ctx.h"
 
-enum { STACK_SIZE = 128*1024, };
+enum { CO_STACK_SIZE = 128*1024, };
 
 struct coroutine_t {
     ctx_t ctx;
     coroutine_t *caller;
     void *(*fn)(void *);
-    void* data;
-    co_state_t state;
+    void *data;
+    uint8_t state;
     char stack[1];
 };
 
-coroutine_t *curr_co = NULL;
-coroutine_t main_co;
+static coroutine_t main_co = { .state = CO_RUNNING, };
+static coroutine_t *curr_co = &main_co;
 
 static void co_return(void *data)
 {
@@ -40,11 +41,12 @@ static int coroutine_fn(transfer_t t)
     return 0;
 }
 
-coroutine_t* co_create(void *(*fn)(void *))
+coroutine_t *co_create(void *(*fn)(void *), co_create_opts_t *opts)
 {
-    coroutine_t* co = malloc(sizeof(coroutine_t) + STACK_SIZE);
-    void *sp = co->stack + STACK_SIZE;
-    co->ctx = co_make_ctx(sp, STACK_SIZE, coroutine_fn);
+    size_t stk_size = !opts ? CO_STACK_SIZE : opts->stack_size;
+    coroutine_t *co = malloc(sizeof(coroutine_t) + stk_size);
+    void *sp = co->stack + stk_size;
+    co->ctx = co_make_ctx(sp, stk_size, coroutine_fn);
     co->fn = fn;
     co->data = NULL;
     co->state = CO_READY;
@@ -53,18 +55,13 @@ coroutine_t* co_create(void *(*fn)(void *))
     return co;
 }
 
-co_state_t co_state(coroutine_t *co)
+void co_destroy(coroutine_t *co)
 {
-    return co->state;
+    free(co);
 }
 
-void* co_resume(coroutine_t* co, void *data)
+void *co_resume(coroutine_t *co, void *data)
 {
-    if (!curr_co) {
-        memset(&main_co, 0, sizeof(main_co));
-        main_co.state = CO_RUNNING;
-        curr_co = &main_co;
-    }
     // CO_READY, CO_SUSPENDED -> CO_RUNNING
     curr_co->state = CO_SUSPENDED;
     co->state = CO_RUNNING;
@@ -80,8 +77,8 @@ void* co_resume(coroutine_t* co, void *data)
 
 void *co_yield(void *data)
 {
-    if (!curr_co || !curr_co->caller) {
-        printf("FATAL co_yield must be invoked in coroutine\n");
+    if (!curr_co->caller) {
+        printf("FATAL can't yield from  main coroutine\n");
         exit(1);
     }
 
@@ -97,13 +94,23 @@ void *co_yield(void *data)
     return curr_co->data;
 }
 
-int co_destroy(coroutine_t *co)
-{
-    free(co);
-    return 0;
-}
-
 coroutine_t *co_self()
 {
     return curr_co;
 }
+
+bool co_is_main()
+{
+    return &main_co == co_self();
+}
+
+uint64_t co_id()
+{
+    return (uint64_t)co_self();
+}
+
+int co_state(coroutine_t *co)
+{
+    return co->state;
+}
+

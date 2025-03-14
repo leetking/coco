@@ -1,5 +1,4 @@
 /****************************************************************************************
- *                                                                                      *
  *  ----------------------------------------------------------------------------------  *
  *  |    0    |    1    |    2    |    3    |    4     |    5    |    6    |    7    |  *
  *  ----------------------------------------------------------------------------------  *
@@ -21,7 +20,6 @@
  *  ----------------------------------------------------------------------------------  *
  *  |        RIP        |                                                            |  *
  *  ----------------------------------------------------------------------------------  *
- *                                                                                      *
  ****************************************************************************************/
 
 /**
@@ -31,20 +29,13 @@
  *     void* data;  // 给此ctx的参数, %rsi, $rdx
  * } transfer_t;
  *
- * transfer_t co_jump_ctx(ctx_t const to, void* data)
+ * transfer_t co_jump_ctx(ctx_t to, void* data)
  * 跳转流程到to上下文中执行，并且传递参数data给to
- * @to %rdi:
- * @data %rsi: 传递给to的执行函数的参数
+ * @param to %rdi:
+ * @param data %rsi: 传递给to的执行函数的参数
  * @return:
- *     ctx %rax: 跳转来自ctx，并且保存了它的上下文
- *     data %rdx: 传递给当前ctx的参数
- *
- * ctx_t co_make_ctx(void* sp, size_t size, int (*fn)(transfer_t));
- * fn接受transfer_t类型参数
- * @sp %rdi:
- * @size %rsi:
- * @fn %rdx: fn接收的参数第一次以 %rdi, %rsi 传入，后续由co_jump_ctx返回值%rax, %rdx获得
- * @return %rax:
+ *     ctx %rax: 跳转来自src，并且保存了它的上下文
+ *     data %rdx: src上下文传递给当前上下问的数据
  */
 .text
 .global co_jump_ctx
@@ -59,9 +50,9 @@ co_jump_ctx:
     movq    %r15, 0x28(%rax)
     movq    %rbx, 0x30(%rax)
     movq    %rbp, 0x38(%rax)
-    /* %rip 在 co_jump_ctx 被调用时就设置到 0x40(%rsp) */
+    /* %rip 在 call co_jump_ctx 时就设置到 0x40(%rsp) */
 
-    /* 恢复ctx */
+    /* 恢复 to ctx */
     movq    %rdi, %rsp
     movq    0x10(%rsp), %r12
     movq    0x18(%rsp), %r13
@@ -70,10 +61,13 @@ co_jump_ctx:
     movq    0x30(%rsp), %rbx
     movq    0x38(%rsp), %rbp
     leaq    0x40(%rsp), %rsp /* 留下 %rip 不恢复，通过ret恢复 */
-    /* 传递参数给fn */
-    movq    %rax, %rdi      /* ctx */
-    movq    %rsi, %rdx      /* data */
-    /* 跳转执行 */
+    /* 传递参数给fn，也构造返回值
+     * fn 第一次被调用的时候，表现为函数调用，构造入参 (%rdi, %rsi)
+     * fn 后续被恢复时，从 co_jump_ctx 返回值获得参数 (%rax, %rdx)
+     */
+    movq    %rax, %rdi      /* src ctx */
+    movq    %rsi, %rdx      /* 传入的 data */
+    /* 跳转执行（也恢复了 %rip） */
     ret
 
 .size co_jump_ctx,.-co_jump_ctx
