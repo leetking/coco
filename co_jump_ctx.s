@@ -53,14 +53,15 @@ co_jump_ctx:
     /* %rip 在 call co_jump_ctx 时就设置到 0x40(%rsp) */
 
     /* 恢复 to ctx */
-    movq    %rdi, %rsp
-    movq    0x10(%rsp), %r12
-    movq    0x18(%rsp), %r13
-    movq    0x20(%rsp), %r14
-    movq    0x28(%rsp), %r15
-    movq    0x30(%rsp), %rbx
-    movq    0x38(%rsp), %rbp
-    leaq    0x40(%rsp), %rsp /* 留下 %rip 不恢复，通过ret恢复 */
+    //movq    %rdi, %rsp
+    movq    0x10(%rdi), %r12
+    movq    0x18(%rdi), %r13
+    movq    0x20(%rdi), %r14
+    movq    0x28(%rdi), %r15
+    movq    0x30(%rdi), %rbx
+    movq    0x38(%rdi), %rbp
+    leaq    0x40(%rdi), %rsp
+    /* 留下 %rip 不恢复，通过ret恢复 */
     /* 传递参数给fn，也构造返回值
      * fn 第一次被调用的时候，表现为函数调用，构造入参 (%rdi, %rsi)
      * fn 后续被恢复时，从 co_jump_ctx 返回值获得参数 (%rax, %rdx)
