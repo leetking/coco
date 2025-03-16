@@ -4,10 +4,12 @@
 #include <stdbool.h>
 
 #include <unistd.h>
+#include <netdb.h>
+#include <poll.h>
+#include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 
 #include "co.h"
 
@@ -28,10 +30,9 @@ void co_sleep(int us);
 int co_connect(int socket, struct sockaddr const *addr, socklen_t addr_len);
 int co_getaddrinfo(char const *node, char const *service,
         struct addrinfo const *hints, struct addrinfo **res);
-
-//poll
-//__poll
-//select
+int co_poll(struct pollfd fds[], nfds_t nfds, int us);
+int co_select(int nfds, fd_set *rdfds, fd_set *wrfds, fd_set *erfds,
+        struct timeval *timeout);
 
 // schedule
 void cosch_add(void* (*fn)(void*), void* data);

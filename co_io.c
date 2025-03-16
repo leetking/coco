@@ -116,6 +116,17 @@ int co_getaddrinfo(char const *node, char const *service,
     return -1;
 }
 
+int co_poll(struct pollfd fds[], nfds_t nfds, int us)
+{
+    return -1;
+}
+
+int co_select(int nfds, fd_set *rdfds, fd_set *wrfds, fd_set *erfds,
+        struct timeval *timeout)
+{
+    return -1;
+}
+
 
 
 // schedule
