@@ -53,7 +53,6 @@ co_jump_ctx:
     /* %rip 在 call co_jump_ctx 时就设置到 0x40(%rsp) */
 
     /* 恢复 to ctx */
-    //movq    %rdi, %rsp
     movq    0x10(%rdi), %r12
     movq    0x18(%rdi), %r13
     movq    0x20(%rdi), %r14

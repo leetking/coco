@@ -3,3 +3,5 @@
 *_test
 core.*
 compile_commands.json
+.xmake/
+build/

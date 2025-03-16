@@ -6,6 +6,10 @@
 
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include "co.h"
 
@@ -90,6 +94,28 @@ void co_sleep(int us)
     // TODO: 采用时间轮实现定时
 }
 
+int co_connect(int socket, const struct sockaddr *addr, socklen_t addr_len)
+{
+    coio_init();
+    struct epoll_event wrev = {
+        .events = EPOLLOUT | EPOLLET,       // 套件字建立后变为可写
+        .data.ptr = coev_data_new(socket),
+    };
+    if (epoll_ctl(ep_fd, EPOLL_CTL_ADD, socket, &wrev) == -1) {
+        return -1;
+    }
+    co_yield(NULL);
+    // TODO: 监听连接错误事件？
+    return connect(socket, addr, addr_len);
+}
+
+int co_getaddrinfo(char const *node, char const *service,
+        struct addrinfo const *hints, struct addrinfo **res)
+{
+    // TODO: 实现
+    return -1;
+}
+
 
 
 // schedule
@@ -121,6 +147,9 @@ void cosch_run(bool (*abort_fn)(void*), void* data)
             coev_data_t *data = events[i].data.ptr;
             epoll_ctl(ep_fd, EPOLL_CTL_DEL, data->fd, NULL);
             co_resume(data->co, NULL);
+            if (co_is_done(data->co)) {
+                co_destroy(data->co);
+            }
             coev_data_free(data);
         }
         if (nready == -1) {

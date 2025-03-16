@@ -53,11 +53,11 @@ void *accept_svr(void *cfg)
         die("setsockopt");
     }
 
-    struct sockaddr_in sip;     // IPv4
-    memset(&sip, 0, sizeof(sip));
-    sip.sin_family = AF_INET;
-    sip.sin_port = htons(port);
-    sip.sin_addr.s_addr = htonl(INADDR_ANY);
+    struct sockaddr_in sip = {  // IPv4
+        .sin_family = AF_INET,
+        .sin_port = htons(port),
+        .sin_addr.s_addr = htonl(INADDR_ANY),
+    };
     printf("Start echosvr at %s:%d\n", "0.0.0.0", port);
 
     if (bind(svr_fd, (struct sockaddr const*)&sip, sizeof(sip)) == -1) {
